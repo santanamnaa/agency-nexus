@@ -14,7 +14,7 @@ const navItems = [
   { label: "Clients", icon: Briefcase, href: "/clients", roles: ["super_admin", "admin", "employee"] },
   { label: "Projects", icon: ListTodo, href: "/projects", roles: ["super_admin", "employee"] },
   { label: "Tasks", icon: FileText, href: "/tasks", roles: ["super_admin", "employee"] },
-  { label: "Keuangan", icon: DollarSign, href: "/finance", roles: ["super_admin", "admin"] },
+  { label: "Keuangan", icon: DollarSign, href: "/finance", roles: ["super_admin"] },
   { label: "Team", icon: Users, href: "/team", roles: ["super_admin"] },
   { label: "Services", icon: Package, href: "/services", roles: ["super_admin"] },
   { label: "Absensi", icon: Clock, href: "/attendance", roles: ["super_admin", "admin", "employee"] },
