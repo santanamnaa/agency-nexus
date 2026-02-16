@@ -1,9 +1,13 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Package } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
+import ServiceDialog from "@/components/dialogs/ServiceDialog";
+import ConfirmDialog from "@/components/dialogs/ConfirmDialog";
+import { toast } from "sonner";
 
 const tierColors: Record<string, string> = {
   essentials: "bg-chart-3/20 text-chart-3",
@@ -12,13 +16,28 @@ const tierColors: Record<string, string> = {
 };
 
 export default function Services() {
+  const { isSuperAdmin, user } = useAuth();
   const [services, setServices] = useState<any[]>([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editService, setEditService] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
 
-  useEffect(() => {
+  const fetchServices = () => {
     supabase.from("services").select("*").order("category").then(({ data }) => {
       if (data) setServices(data);
     });
-  }, []);
+  };
+
+  useEffect(() => { fetchServices(); }, []);
+
+  const handleDelete = async () => {
+    if (!deleteTarget || !user) return;
+    const { error } = await supabase.from("services").delete().eq("id", deleteTarget.id);
+    if (error) { toast.error("Gagal menghapus service"); return; }
+    toast.success("Service berhasil dihapus");
+    setDeleteTarget(null);
+    fetchServices();
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -27,7 +46,11 @@ export default function Services() {
           <h1 className="text-2xl font-bold font-display">Service Catalog</h1>
           <p className="text-muted-foreground">Katalog layanan & pricing</p>
         </div>
-        <Button className="gradient-primary text-primary-foreground"><Plus className="h-4 w-4 mr-2" />Tambah Service</Button>
+        {isSuperAdmin && (
+          <Button className="gradient-primary text-primary-foreground" onClick={() => { setEditService(null); setDialogOpen(true); }}>
+            <Plus className="h-4 w-4 mr-2" />Tambah Service
+          </Button>
+        )}
       </div>
 
       {services.length === 0 ? (
@@ -46,11 +69,21 @@ export default function Services() {
               <CardContent>
                 <p className="text-lg font-bold font-display">Rp {(s.price || 0).toLocaleString("id-ID")}</p>
                 <p className="text-xs text-muted-foreground mt-1">HPP: Rp {(s.hpp || 0).toLocaleString("id-ID")}</p>
+                {s.description && <p className="text-xs text-muted-foreground mt-2">{s.description}</p>}
+                {isSuperAdmin && (
+                  <div className="flex gap-1 mt-3">
+                    <Button variant="ghost" size="sm" onClick={() => { setEditService(s); setDialogOpen(true); }}><Pencil className="h-3 w-3 mr-1" />Edit</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(s)}><Trash2 className="h-3 w-3 mr-1 text-destructive" />Hapus</Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <ServiceDialog open={dialogOpen} onOpenChange={setDialogOpen} service={editService} onSuccess={fetchServices} />
+      <ConfirmDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)} title="Hapus Service?" description={`Yakin ingin menghapus "${deleteTarget?.name}"?`} onConfirm={handleDelete} />
     </div>
   );
 }
